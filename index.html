@@ -3,43 +3,84 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Nova Dev Kit</title>
+  <title>DarkNova Dev Kit</title>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="orb o1"></div><div class="orb o2"></div>
-  <div class="wrap">
+  <aside>
+    <p class="mark">DN</p>
+    <p class="brand">DEV KIT</p>
+    <nav id="tabs">
+      <button class="on" data-tab="json">JSON</button>
+      <button data-tab="b64">Base64</button>
+      <button data-tab="hash">SHA-256</button>
+      <button data-tab="jwt">JWT peek</button>
+      <button data-tab="uuid">IDs</button>
+      <button data-tab="color">Color</button>
+    </nav>
+    <p class="hint">Stays in this tab. Nothing is uploaded.</p>
+  </aside>
+  <main>
     <header>
       <p class="eyebrow">MR. DARKNOVA</p>
-      <h1>DEV <span>KIT</span></h1>
-      <p class="sub">JSON, Base64, UUID, color. Runs in this tab only.</p>
+      <h1 id="title">JSON</h1>
     </header>
-    <section>
-      <h2>JSON</h2>
-      <textarea id="jsonIn" rows="6" placeholder='{"ok":true}'></textarea>
+
+    <section class="panel on" id="json">
+      <div class="split">
+        <textarea id="jsonIn" placeholder='{"ok":true}'></textarea>
+        <pre id="jsonOut"></pre>
+      </div>
       <div class="row">
         <button id="jsonBtn">Format</button>
         <button class="ghost" id="jsonMin">Minify</button>
-        <button class="ghost" id="jsonCopy">Copy</button>
+        <button class="ghost" id="jsonCopy">Copy out</button>
       </div>
-      <pre id="jsonOut"></pre>
     </section>
-    <section>
-      <h2>Base64</h2>
-      <textarea id="b64In" rows="3" placeholder="text"></textarea>
+
+    <section class="panel" id="b64">
+      <div class="split">
+        <textarea id="b64In" placeholder="plain text"></textarea>
+        <pre id="b64Out"></pre>
+      </div>
       <div class="row">
         <button id="encBtn">Encode</button>
         <button class="ghost" id="decBtn">Decode</button>
       </div>
-      <pre id="b64Out"></pre>
     </section>
-    <section>
-      <h2>UUID + color</h2>
-      <div class="row"><button id="uuidBtn">New UUID</button><code id="uuidOut"></code></div>
-      <div class="row"><input id="color" type="color" value="#7c5cfc" /><code id="hexOut">#7c5cfc</code></div>
+
+    <section class="panel" id="hash">
+      <textarea id="hashIn" rows="5" placeholder="text to hash"></textarea>
+      <div class="row"><button id="hashBtn">SHA-256</button></div>
+      <pre id="hashOut"></pre>
     </section>
-  </div>
+
+    <section class="panel" id="jwt">
+      <textarea id="jwtIn" rows="4" placeholder="header.payload.signature"></textarea>
+      <div class="row"><button id="jwtBtn">Decode payload</button></div>
+      <pre id="jwtOut"></pre>
+      <p class="hint">Reads the payload only. Does not verify a signature.</p>
+    </section>
+
+    <section class="panel" id="uuid">
+      <div class="row">
+        <button id="uuidBtn">New UUID</button>
+        <button class="ghost" id="uuidCopy">Copy</button>
+      </div>
+      <pre id="uuidOut"></pre>
+    </section>
+
+    <section class="panel" id="color">
+      <div class="row">
+        <input id="color" type="color" value="#7c5cfc" />
+        <code id="hexOut">#7c5cfc</code>
+        <button class="ghost" id="hexCopy">Copy hex</button>
+      </div>
+      <div class="swatch" id="swatch"></div>
+    </section>
+  </main>
   <script src="app.js"></script>
 </body>
 </html>
