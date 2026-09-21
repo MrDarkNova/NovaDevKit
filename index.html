@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Nova Dev Kit</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <p class="kicker">Mr. Darknova</p>
+      <h1>Nova Dev Kit</h1>
+      <p>JSON, Base64, UUID, and hex color — all in the browser.</p>
+    </header>
+
+    <section>
+      <h2>JSON formatter</h2>
+      <textarea id="jsonIn" rows="8" placeholder='{"hello":"world"}'></textarea>
+      <div class="row">
+        <button type="button" id="jsonBtn">Format</button>
+        <button type="button" class="ghost" id="jsonCopy">Copy</button>
+      </div>
+      <pre id="jsonOut"></pre>
+    </section>
+
+    <section>
+      <h2>Base64</h2>
+      <textarea id="b64In" rows="4" placeholder="text or base64"></textarea>
+      <div class="row">
+        <button type="button" id="encBtn">Encode</button>
+        <button type="button" id="decBtn">Decode</button>
+      </div>
+      <pre id="b64Out"></pre>
+    </section>
+
+    <section>
+      <h2>UUID v4</h2>
+      <div class="row">
+        <button type="button" id="uuidBtn">Generate</button>
+        <code id="uuidOut"></code>
+      </div>
+    </section>
+
+    <section>
+      <h2>Color</h2>
+      <div class="row">
+        <input type="color" id="color" value="#7c5cfc" />
+        <code id="hexOut">#7c5cfc</code>
+      </div>
+    </section>
+  </main>
+  <script src="app.js"></script>
+</body>
+</html>
