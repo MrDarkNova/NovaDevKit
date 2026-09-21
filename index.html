@@ -4,28 +4,35 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Nova Dev Kit</title>
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div class="orb o1"></div><div class="orb o2"></div>
   <div class="wrap">
     <header>
-      <svg width="40" height="40" viewBox="0 0 40 40" fill="none"><rect width="40" height="40" rx="12" fill="#7c5cfc"/><path d="M12 28V12h3.2l4.8 8.2L24.8 12H28v16h-3.1V17.6L20.2 26h-.4l-4.7-8.4V28H12z" fill="#fff"/></svg>
-      <p class="kicker">Browser utilities</p>
-      <h1>Nova Dev Kit</h1>
-      <p>Format JSON, encode secrets for demos, mint IDs, pick a color. Nothing leaves this tab.</p>
+      <p class="eyebrow">MR. DARKNOVA</p>
+      <h1>DEV <span>KIT</span></h1>
+      <p class="sub">JSON, Base64, UUID, color. Runs in this tab only.</p>
     </header>
     <section>
       <h2>JSON</h2>
       <textarea id="jsonIn" rows="6" placeholder='{"ok":true}'></textarea>
-      <div class="row"><button id="fmt">Format</button><button class="ghost" id="min">Minify</button></div>
+      <div class="row">
+        <button id="jsonBtn">Format</button>
+        <button class="ghost" id="jsonMin">Minify</button>
+        <button class="ghost" id="jsonCopy">Copy</button>
+      </div>
       <pre id="jsonOut"></pre>
     </section>
     <section>
       <h2>Base64</h2>
-      <textarea id="b64in" rows="3" placeholder="text"></textarea>
-      <div class="row"><button id="enc">Encode</button><button class="ghost" id="dec">Decode</button></div>
-      <pre id="b64out"></pre>
+      <textarea id="b64In" rows="3" placeholder="text"></textarea>
+      <div class="row">
+        <button id="encBtn">Encode</button>
+        <button class="ghost" id="decBtn">Decode</button>
+      </div>
+      <pre id="b64Out"></pre>
     </section>
     <section>
       <h2>UUID + color</h2>
