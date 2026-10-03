@@ -2,85 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DarkNova Dev Kit</title>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>DarkNova Dev Kit — JSON, JWT, hashes, regex &amp; more</title>
+  <meta name="description" content="Private, in-browser developer tools: JSON formatter, Base64, URL, SHA hashes and HMAC, JWT decoder and verifier, UUID/ULID/password generator, timestamps, regex tester and color contrast. Nothing is uploaded." />
+  <meta name="theme-color" content="#100e0c" />
+  <meta property="og:title" content="DarkNova Dev Kit" />
+  <meta property="og:description" content="Nine developer tools that run entirely in your browser." />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,520&family=Outfit:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <div class="orb o1"></div><div class="orb o2"></div>
+  <a class="skip" href="#stage">Skip to tool</a>
   <aside>
-    <p class="mark">DN</p>
-    <p class="brand">DEV KIT</p>
-    <nav id="tabs">
-      <button class="on" data-tab="json">JSON</button>
-      <button data-tab="b64">Base64</button>
-      <button data-tab="hash">SHA-256</button>
-      <button data-tab="jwt">JWT peek</button>
-      <button data-tab="uuid">IDs</button>
-      <button data-tab="color">Color</button>
-    </nav>
-    <p class="hint">Stays in this tab. Nothing is uploaded.</p>
+    <div class="top">
+      <p class="mark" aria-hidden="true">DN</p>
+      <p class="brand">DEV KIT</p>
+    </div>
+    <label class="sr" for="find">Find a tool</label>
+    <input id="find" class="find" type="search" placeholder="Find a tool…  ( / )" autocomplete="off" />
+    <nav id="tabs" aria-label="Tools"></nav>
+    <p class="hint">Runs in this tab. Nothing is uploaded or stored.</p>
   </aside>
   <main>
     <header>
       <p class="eyebrow">MR. DARKNOVA</p>
       <h1 id="title">JSON</h1>
+      <p class="lede" id="lede"></p>
     </header>
-
-    <section class="panel on" id="json">
-      <div class="split">
-        <textarea id="jsonIn" placeholder='{"ok":true}'></textarea>
-        <pre id="jsonOut"></pre>
-      </div>
-      <div class="row">
-        <button id="jsonBtn">Format</button>
-        <button class="ghost" id="jsonMin">Minify</button>
-        <button class="ghost" id="jsonCopy">Copy out</button>
-      </div>
-    </section>
-
-    <section class="panel" id="b64">
-      <div class="split">
-        <textarea id="b64In" placeholder="plain text"></textarea>
-        <pre id="b64Out"></pre>
-      </div>
-      <div class="row">
-        <button id="encBtn">Encode</button>
-        <button class="ghost" id="decBtn">Decode</button>
-      </div>
-    </section>
-
-    <section class="panel" id="hash">
-      <textarea id="hashIn" rows="5" placeholder="text to hash"></textarea>
-      <div class="row"><button id="hashBtn">SHA-256</button></div>
-      <pre id="hashOut"></pre>
-    </section>
-
-    <section class="panel" id="jwt">
-      <textarea id="jwtIn" rows="4" placeholder="header.payload.signature"></textarea>
-      <div class="row"><button id="jwtBtn">Decode payload</button></div>
-      <pre id="jwtOut"></pre>
-      <p class="hint">Reads the payload only. Does not verify a signature.</p>
-    </section>
-
-    <section class="panel" id="uuid">
-      <div class="row">
-        <button id="uuidBtn">New UUID</button>
-        <button class="ghost" id="uuidCopy">Copy</button>
-      </div>
-      <pre id="uuidOut"></pre>
-    </section>
-
-    <section class="panel" id="color">
-      <div class="row">
-        <input id="color" type="color" value="#7c5cfc" />
-        <code id="hexOut">#7c5cfc</code>
-        <button class="ghost" id="hexCopy">Copy hex</button>
-      </div>
-      <div class="swatch" id="swatch"></div>
-    </section>
+    <div id="stage" tabindex="-1"></div>
   </main>
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+  <noscript><p class="noscript">Dev Kit needs JavaScript to run its tools.</p></noscript>
   <script src="app.js"></script>
 </body>
 </html>
