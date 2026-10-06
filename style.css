@@ -150,3 +150,9 @@ em{color:var(--muted)}
   .contrast{grid-template-columns:1fr}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+.mdview{padding:1rem;overflow:auto;line-height:1.6}
+.mdview table{border-collapse:collapse}.mdview td,.mdview th{border:1px solid currentColor;padding:.25rem .5rem;opacity:.9}
+.mdview pre{background:rgba(127,127,127,.12);padding:.75rem;border-radius:6px;overflow:auto}
+.mdview img{max-width:100%}
+.chip{font-size:.8rem;padding:.25rem .6rem;border-radius:999px}
