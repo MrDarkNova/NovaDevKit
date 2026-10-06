@@ -349,7 +349,7 @@ tool({
 
 /* ---------- Hash ---------- */
 tool({
-  id: 'hash', name: 'Hash', keys: 'sha256 sha1 sha512 hmac checksum file',
+  id: 'hash', name: 'Hash', keys: 'dehash verify sha256 sha1 sha512 hmac checksum file',
   lede: 'SHA-1, SHA-256, SHA-384 and SHA-512 of text or a file, with optional HMAC and a checksum compare.',
   html: () => `
     <div class="col">
@@ -816,6 +816,525 @@ tool({
       if (b) { $('clr-in').value = b.dataset.color; fromText(); }
     });
     fromText();
+  },
+});
+
+
+/* ---------- Hex ---------- */
+tool({
+  id: 'hex', name: 'Hex', keys: 'hexadecimal encode decode bytes binary reverse',
+  lede: 'Convert text to hexadecimal bytes and back. UTF-8 safe, handles spaces and 0x prefixes.',
+  html: () => `
+    <div class="split">
+      <div class="col">
+        <label class="lbl" for="hex-in">Input</label>
+        <textarea id="hex-in" spellcheck="false" placeholder="Text, or hex to decode (48 65 6c 6c 6f)"></textarea>
+      </div>
+      ${outBox('hex-out')}
+    </div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Direction">
+        <button type="button" class="on" id="hex-enc" aria-pressed="true">Encode</button>
+        <button type="button" id="hex-dec" aria-pressed="false">Decode</button>
+      </div>
+      <label class="opt"><input type="checkbox" id="hex-upper" /> Uppercase</label>
+      <label class="opt"><input type="checkbox" id="hex-spaces" checked /> Space every byte</label>
+      <span class="grow"></span>
+      <button type="button" class="ghost" id="hex-swap">Use output as input</button>
+    </div>`,
+  init() {
+    let mode = 'enc';
+    const run = () => {
+      const text = $('hex-in').value;
+      if (!text) { $('hex-out').textContent = ''; setStatus('hex-out', ''); return; }
+      try {
+        if (mode === 'enc') {
+          const bytes = encoder.encode(text);
+          let h = hex(bytes);
+          if ($('hex-upper').checked) h = h.toUpperCase();
+          if ($('hex-spaces').checked) h = h.replace(/(..)/g, '$1 ').trim();
+          $('hex-out').textContent = h;
+          setStatus('hex-out', `${bytes.length} bytes`, 'ok');
+        } else {
+          let s = text.replace(/0x/gi, '').replace(/[\s,:;\-]/g, '');
+          if (!/^[0-9a-f]*$/i.test(s)) throw new Error('Hex can only contain 0–9 and a–f.');
+          if (s.length % 2) throw new Error('Hex length must be even (two characters per byte).');
+          const bytes = new Uint8Array(s.length / 2);
+          for (let i = 0; i < bytes.length; i++) bytes[i] = parseInt(s.substr(i * 2, 2), 16);
+          try {
+            $('hex-out').textContent = strictDecoder.decode(bytes);
+            setStatus('hex-out', `${bytes.length} bytes → text`, 'ok');
+          } catch {
+            $('hex-out').textContent = `Binary data (${bytes.length} bytes), not UTF-8 text.`;
+            setStatus('hex-out', 'Binary', 'warn');
+          }
+        }
+      } catch (err) {
+        $('hex-out').textContent = err.message;
+        setStatus('hex-out', 'Invalid', 'bad');
+      }
+    };
+    const setMode = (m) => {
+      mode = m;
+      $('hex-enc').classList.toggle('on', m === 'enc'); $('hex-dec').classList.toggle('on', m === 'dec');
+      $('hex-enc').setAttribute('aria-pressed', m === 'enc'); $('hex-dec').setAttribute('aria-pressed', m === 'dec');
+      run();
+    };
+    $('hex-in').addEventListener('input', live('hex', run));
+    $('hex-enc').onclick = () => setMode('enc');
+    $('hex-dec').onclick = () => setMode('dec');
+    $('hex-upper').onchange = run;
+    $('hex-spaces').onchange = run;
+    $('hex-swap').onclick = () => { const o = $('hex-out').textContent; if (o) { $('hex-in').value = o; setMode(mode === 'enc' ? 'dec' : 'enc'); } };
+  },
+});
+
+/* ---------- HTML entities ---------- */
+tool({
+  id: 'html', name: 'HTML', keys: 'entities escape unescape html encode decode',
+  lede: 'Escape HTML so tags render as text, or turn &amp;amp; style entities back into readable text.',
+  html: () => `
+    <div class="split">
+      <div class="col">
+        <label class="lbl" for="html-in">Input</label>
+        <textarea id="html-in" spellcheck="false" placeholder="<p>Hello &amp; welcome</p>"></textarea>
+      </div>
+      ${outBox('html-out')}
+    </div>
+    <div class="row">
+      <div class="seg" role="group" aria-label="Direction">
+        <button type="button" class="on" id="html-enc" aria-pressed="true">Escape</button>
+        <button type="button" id="html-dec" aria-pressed="false">Unescape</button>
+      </div>
+      <label class="opt"><input type="checkbox" id="html-all" /> Escape every non-ASCII character too</label>
+      <span class="grow"></span>
+      <button type="button" class="ghost" id="html-swap">Use output as input</button>
+    </div>`,
+  init() {
+    let mode = 'enc';
+    const basic = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    const run = () => {
+      const text = $('html-in').value;
+      if (!text) { $('html-out').textContent = ''; setStatus('html-out', ''); return; }
+      if (mode === 'enc') {
+        let out = text.replace(/[&<>"']/g, (c) => basic[c]);
+        if ($('html-all').checked) out = out.replace(/[\u0080-\uffff]/g, (c) => `&#${c.charCodeAt(0)};`);
+        $('html-out').textContent = out;
+        setStatus('html-out', 'Escaped', 'ok');
+      } else {
+        const t = document.createElement('textarea');
+        t.innerHTML = text;
+        $('html-out').textContent = t.value;
+        setStatus('html-out', 'Unescaped', 'ok');
+      }
+    };
+    const setMode = (m) => {
+      mode = m;
+      $('html-enc').classList.toggle('on', m === 'enc'); $('html-dec').classList.toggle('on', m === 'dec');
+      $('html-enc').setAttribute('aria-pressed', m === 'enc'); $('html-dec').setAttribute('aria-pressed', m === 'dec');
+      run();
+    };
+    $('html-in').addEventListener('input', live('html', run));
+    $('html-enc').onclick = () => setMode('enc');
+    $('html-dec').onclick = () => setMode('dec');
+    $('html-all').onchange = run;
+    $('html-swap').onclick = () => { const o = $('html-out').textContent; if (o) { $('html-in').value = o; setMode(mode === 'enc' ? 'dec' : 'enc'); } };
+  },
+});
+
+/* ---------- Case ---------- */
+tool({
+  id: 'case', name: 'Case', keys: 'case camelcase snake_case kebab pascal title upper lower sentence',
+  lede: 'Convert text between camelCase, snake_case, kebab-case, PascalCase, Title and sentence case.',
+  html: () => `
+    <div class="col">
+      <label class="lbl" for="case-in">Input</label>
+      <textarea id="case-in" class="short" spellcheck="false" placeholder="Dark Nova Dev Kit"></textarea>
+    </div>
+    <div id="case-rows" class="kv"></div>`,
+  init() {
+    const words = (s) => s
+      .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+      .split(/[\s_\-\.\/]+/).filter(Boolean);
+    const transforms = {
+      'camelCase': (w) => w.map((x, i) => i === 0 ? x.toLowerCase() : x[0].toUpperCase() + x.slice(1).toLowerCase()).join(''),
+      'PascalCase': (w) => w.map((x) => x[0].toUpperCase() + x.slice(1).toLowerCase()).join(''),
+      'snake_case': (w) => w.map((x) => x.toLowerCase()).join('_'),
+      'CONSTANT_CASE': (w) => w.map((x) => x.toUpperCase()).join('_'),
+      'kebab-case': (w) => w.map((x) => x.toLowerCase()).join('-'),
+      'Title Case': (w) => w.map((x) => x[0].toUpperCase() + x.slice(1).toLowerCase()).join(' '),
+      'Sentence case': (w) => { const j = w.map((x) => x.toLowerCase()).join(' '); return j[0] ? j[0].toUpperCase() + j.slice(1) : ''; },
+      'lowercase': (w) => w.join(' ').toLowerCase(),
+      'UPPERCASE': (w) => w.join(' ').toUpperCase(),
+      'path/case': (w) => w.map((x) => x.toLowerCase()).join('/'),
+      'dot.case': (w) => w.map((x) => x.toLowerCase()).join('.'),
+    };
+    const run = () => {
+      const text = $('case-in').value;
+      const w = words(text);
+      $('case-rows').innerHTML = Object.entries(transforms).map(([k, fn], i) => {
+        const v = w.length ? fn(w) : '';
+        return `<div><span>${esc(k)}</span><code id="case-v${i}">${esc(v)}</code><button type="button" class="mini" data-copy="case-v${i}">Copy</button></div>`;
+      }).join('');
+    };
+    $('case-in').addEventListener('input', live('case', run, 80));
+    run();
+  },
+});
+
+/* ---------- Encrypt ---------- */
+tool({
+  id: 'enc', name: 'Encrypt', keys: 'encrypt decrypt aes gcm password crypto secret reverse',
+  lede: 'Password-based AES-256-GCM. Encrypt text into a safe-to-share string and decrypt it with the same password.',
+  html: () => `
+    <div class="split">
+      <div class="col">
+        <label class="lbl" for="enc-in">Input</label>
+        <textarea id="enc-in" spellcheck="false" placeholder="Message, or the DN1:… ciphertext to decrypt"></textarea>
+      </div>
+      ${outBox('enc-out')}
+    </div>
+    <div class="row">
+      <input id="enc-pass" type="password" class="grow-in" spellcheck="false" autocomplete="new-password" placeholder="Password" />
+      <label class="opt"><input type="checkbox" id="enc-show" /> Show</label>
+    </div>
+    <div class="row">
+      <button type="button" id="enc-go">Encrypt</button>
+      <button type="button" class="ghost" id="enc-dec">Decrypt</button>
+      <span class="grow"></span>
+      <button type="button" class="ghost" id="enc-swap">Use output as input</button>
+    </div>
+    <p class="hint">AES-256-GCM with PBKDF2-SHA-256 (250 000 iterations). The password never leaves this tab, and without it the ciphertext can't be read.</p>`,
+  init() {
+    const MAGIC = 'DN1';
+    const ITER = 250000;
+    const deriveKey = async (pass, salt, usages) => {
+      const base = await crypto.subtle.importKey('raw', encoder.encode(pass), 'PBKDF2', false, ['deriveKey']);
+      return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations: ITER, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, usages);
+    };
+    const encrypt = async () => {
+      const text = $('enc-in').value, pass = $('enc-pass').value;
+      if (!text) { $('enc-out').textContent = ''; setStatus('enc-out', ''); return; }
+      if (!pass) { setStatus('enc-out', 'Enter a password', 'warn'); return; }
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveKey(pass, salt, ['encrypt']);
+      const ct = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, encoder.encode(text)));
+      const packed = new Uint8Array(salt.length + iv.length + ct.length);
+      packed.set(salt, 0); packed.set(iv, salt.length); packed.set(ct, salt.length + iv.length);
+      $('enc-out').textContent = `${MAGIC}:${bytesToB64(packed, true)}`;
+      setStatus('enc-out', `Encrypted · ${kb(ct.length)}`, 'ok');
+    };
+    const decrypt = async () => {
+      const raw = $('enc-in').value.trim(), pass = $('enc-pass').value;
+      if (!raw) { $('enc-out').textContent = ''; setStatus('enc-out', ''); return; }
+      if (!pass) { setStatus('enc-out', 'Enter the password', 'warn'); return; }
+      try {
+        const body = raw.startsWith(`${MAGIC}:`) ? raw.slice(MAGIC.length + 1) : raw;
+        const packed = b64ToBytes(body);
+        if (packed.length < 16 + 12 + 16) throw new Error('Ciphertext is too short.');
+        const salt = packed.slice(0, 16), iv = packed.slice(16, 28), ct = packed.slice(28);
+        const key = await deriveKey(pass, salt, ['decrypt']);
+        const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+        $('enc-out').textContent = strictDecoder.decode(pt);
+        setStatus('enc-out', 'Decrypted', 'ok');
+      } catch (err) {
+        $('enc-out').textContent = 'Could not decrypt. The password is wrong, or the ciphertext is damaged.';
+        setStatus('enc-out', 'Failed', 'bad');
+      }
+    };
+    $('enc-go').onclick = encrypt;
+    $('enc-dec').onclick = decrypt;
+    $('enc-show').onchange = (e) => { $('enc-pass').type = e.target.checked ? 'text' : 'password'; };
+    $('enc-swap').onclick = () => { const o = $('enc-out').textContent; if (o) { $('enc-in').value = o; } };
+  },
+});
+
+/* ---------- Markdown ---------- */
+tool({
+  id: 'md', name: 'Markdown', keys: 'markdown md preview render html',
+  lede: 'Write Markdown and see the rendered result. Headings, lists, links, code and tables are supported.',
+  html: () => `
+    <div class="split">
+      <div class="col">
+        <label class="lbl" for="md-in">Markdown</label>
+        <textarea id="md-in" spellcheck="false" placeholder="# Hello
+
+**Bold**, *italic*, [link](https://example.com), \`code\`."></textarea>
+      </div>
+      <div class="outbox">
+        <div class="outbar"><span class="lbl">Preview</span>
+          <button type="button" class="mini" data-copy="md-html-src">Copy HTML</button>
+        </div>
+        <div id="md-view" class="mdview"></div>
+        <pre id="md-html-src" hidden></pre>
+      </div>
+    </div>`,
+  init() {
+    const render = (src) => {
+      // Fenced code blocks first (protect from other rules).
+      const blocks = [];
+      src = src.replace(/```([^\n`]*)\n([\s\S]*?)```/g, (_, lang, code) => {
+        blocks.push(`<pre><code${lang ? ` class="lang-${esc(lang.trim())}"` : ''}>${esc(code)}</code></pre>`);
+        return `\u0000${blocks.length - 1}\u0000`;
+      });
+      const lines = src.split('\n');
+      const out = []; let i = 0;
+      const inline = (s) => esc(s)
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+        .replace(/(^|[\s(])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+        .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img alt="$1" src="$2" />')
+        .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" rel="noopener noreferrer" target="_blank">$1</a>');
+      while (i < lines.length) {
+        const l = lines[i];
+        let m;
+        if (/^\s*$/.test(l)) { i++; continue; }
+        if ((m = /^(#{1,6})\s+(.*)$/.exec(l))) { out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`); i++; continue; }
+        if (/^\s*(---|\*\*\*|___)\s*$/.test(l)) { out.push('<hr/>'); i++; continue; }
+        if (/^>\s?/.test(l)) {
+          const buf = [];
+          while (i < lines.length && /^>\s?/.test(lines[i])) { buf.push(lines[i].replace(/^>\s?/, '')); i++; }
+          out.push(`<blockquote>${render(buf.join('\n'))}</blockquote>`);
+          continue;
+        }
+        if (/^\s*[-*+]\s+/.test(l)) {
+          const items = [];
+          while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) { items.push(inline(lines[i].replace(/^\s*[-*+]\s+/, ''))); i++; }
+          out.push(`<ul>${items.map((x) => `<li>${x}</li>`).join('')}</ul>`); continue;
+        }
+        if (/^\s*\d+\.\s+/.test(l)) {
+          const items = [];
+          while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) { items.push(inline(lines[i].replace(/^\s*\d+\.\s+/, ''))); i++; }
+          out.push(`<ol>${items.map((x) => `<li>${x}</li>`).join('')}</ol>`); continue;
+        }
+        if (/^\|.*\|$/.test(l) && i + 1 < lines.length && /^\|\s*:?-+/.test(lines[i + 1])) {
+          const row = (s) => s.replace(/^\||\|$/g, '').split('|').map((c) => c.trim());
+          const head = row(l); i += 2;
+          const body = [];
+          while (i < lines.length && /^\|.*\|$/.test(lines[i])) { body.push(row(lines[i])); i++; }
+          out.push(`<table><thead><tr>${head.map((c) => `<th>${inline(c)}</th>`).join('')}</tr></thead><tbody>${body.map((r) => `<tr>${r.map((c) => `<td>${inline(c)}</td>`).join('')}</tr>`).join('')}</tbody></table>`);
+          continue;
+        }
+        const buf = [];
+        while (i < lines.length && !/^\s*$/.test(lines[i]) && !/^(#{1,6}\s|>\s?|\s*[-*+]\s|\s*\d+\.\s|\|)/.test(lines[i])) { buf.push(lines[i]); i++; }
+        if (buf.length) out.push(`<p>${inline(buf.join(' '))}</p>`);
+      }
+      return out.join('\n').replace(/\u0000(\d+)\u0000/g, (_, n) => blocks[+n]);
+    };
+    const run = () => {
+      const html = render($('md-in').value);
+      $('md-view').innerHTML = html;
+      $('md-html-src').textContent = html;
+    };
+    $('md-in').addEventListener('input', live('md', run, 100));
+    run();
+  },
+});
+
+/* ---------- Text stats ---------- */
+tool({
+  id: 'text', name: 'Text stats', keys: 'text count word character line reading time',
+  lede: 'Count characters, words, lines and sentences, and estimate reading time.',
+  html: () => `
+    <div class="col">
+      <label class="lbl" for="txt-in">Text</label>
+      <textarea id="txt-in" spellcheck="false" placeholder="Paste some text"></textarea>
+    </div>
+    <div id="txt-rows" class="kv"></div>
+    <h2 class="sub">Clean up</h2>
+    <div class="row">
+      <button type="button" class="ghost" id="txt-trim">Trim lines</button>
+      <button type="button" class="ghost" id="txt-dedupe">Remove duplicates</button>
+      <button type="button" class="ghost" id="txt-sort">Sort A→Z</button>
+      <button type="button" class="ghost" id="txt-rsort">Sort Z→A</button>
+      <button type="button" class="ghost" id="txt-reverse">Reverse order</button>
+      <button type="button" class="ghost" id="txt-blanks">Drop blank lines</button>
+    </div>`,
+  init() {
+    const run = () => {
+      const t = $('txt-in').value;
+      const chars = [...t].length;
+      const noWs = t.replace(/\s/g, '').length;
+      const words = (t.match(/\S+/g) || []).length;
+      const sentences = (t.match(/[^.!?]+[.!?]+/g) || []).length;
+      const lines = t ? t.split('\n').length : 0;
+      const paragraphs = t.split(/\n{2,}/).filter((p) => p.trim()).length;
+      const mins = Math.max(1, Math.round(words / 230));
+      const data = [
+        ['Characters', chars.toLocaleString()],
+        ['Characters (no whitespace)', noWs.toLocaleString()],
+        ['Words', words.toLocaleString()],
+        ['Sentences', sentences.toLocaleString()],
+        ['Lines', lines.toLocaleString()],
+        ['Paragraphs', paragraphs.toLocaleString()],
+        ['Bytes (UTF-8)', encoder.encode(t).length.toLocaleString()],
+        ['Reading time', `~${mins} min`],
+      ];
+      $('txt-rows').innerHTML = data.map(([k, v]) => `<div><span>${esc(k)}</span><code>${v}</code></div>`).join('');
+    };
+    const ops = {
+      'txt-trim': (ls) => ls.map((l) => l.trim()),
+      'txt-dedupe': (ls) => [...new Set(ls)],
+      'txt-sort': (ls) => [...ls].sort((a, b) => a.localeCompare(b)),
+      'txt-rsort': (ls) => [...ls].sort((a, b) => b.localeCompare(a)),
+      'txt-reverse': (ls) => [...ls].reverse(),
+      'txt-blanks': (ls) => ls.filter((l) => l.trim()),
+    };
+    for (const [id, fn] of Object.entries(ops)) {
+      $(id).onclick = () => { $('txt-in').value = fn($('txt-in').value.split('\n')).join('\n'); run(); };
+    }
+    $('txt-in').addEventListener('input', live('text', run, 80));
+    run();
+  },
+});
+
+/* ---------- Cron ---------- */
+tool({
+  id: 'cron', name: 'Cron', keys: 'cron schedule crontab job every',
+  lede: 'Explain a cron expression in plain English and show the next few run times.',
+  html: () => `
+    <div class="row">
+      <input id="cron-in" type="text" class="grow-in mono" spellcheck="false" autocomplete="off" value="*/15 9-17 * * 1-5" placeholder="minute hour day-of-month month day-of-week" />
+    </div>
+    <p class="status" id="cron-status" role="status"></p>
+    <p id="cron-plain" class="lede"></p>
+    <h2 class="sub">Next 10 runs (local time)</h2>
+    <div id="cron-next" class="kv"></div>
+    <div class="row">
+      <span class="muted">Presets:</span>
+      <button type="button" class="chip" data-cron="* * * * *">every minute</button>
+      <button type="button" class="chip" data-cron="0 * * * *">hourly</button>
+      <button type="button" class="chip" data-cron="0 9 * * *">daily 9am</button>
+      <button type="button" class="chip" data-cron="0 9 * * 1-5">weekdays 9am</button>
+      <button type="button" class="chip" data-cron="0 0 1 * *">monthly</button>
+      <button type="button" class="chip" data-cron="*/5 * * * *">every 5 min</button>
+    </div>`,
+  init() {
+    const parseField = (f, min, max, names) => {
+      const out = new Set();
+      for (const part of f.split(',')) {
+        let m;
+        if (part === '*') { for (let i = min; i <= max; i++) out.add(i); continue; }
+        if ((m = /^(\*|(\d+)(?:-(\d+))?)\/(\d+)$/.exec(part))) {
+          const step = +m[4];
+          const lo = m[1] === '*' ? min : +m[2];
+          const hi = m[1] === '*' ? max : (m[3] != null ? +m[3] : max);
+          for (let i = lo; i <= hi; i += step) out.add(i);
+          continue;
+        }
+        if ((m = /^(\d+)-(\d+)$/.exec(part))) { for (let i = +m[1]; i <= +m[2]; i++) out.add(i); continue; }
+        if ((m = /^(\d+)$/.exec(part))) { out.add(+m[1]); continue; }
+        if (names) {
+          const idx = names.indexOf(part.toLowerCase());
+          if (idx >= 0) { out.add(idx + min); continue; }
+        }
+        throw new Error(`Can't read "${part}"`);
+      }
+      for (const v of out) if (v < min || v > max) throw new Error(`${v} is outside ${min}–${max}`);
+      return out;
+    };
+    const months = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+    const dows = ['sun','mon','tue','wed','thu','fri','sat'];
+    const describe = (expr) => {
+      const parts = expr.trim().split(/\s+/);
+      if (parts.length !== 5) throw new Error('A cron expression has 5 fields.');
+      const [mi, hr, dom, mo, dow] = parts;
+      const d = (f, w) => f === '*' ? `every ${w}` : f.includes('/') ? `every ${f.split('/')[1]} ${w}s${f.split('/')[0] === '*' ? '' : ` within ${f.split('/')[0]}`}` : `${w} ${f}`;
+      return `Runs ${d(mi, 'minute')} of ${d(hr, 'hour')}, on ${dom === '*' ? 'every day' : `day ${dom}`} of ${mo === '*' ? 'every month' : `month ${mo}`}, ${dow === '*' ? 'any weekday' : `weekday ${dow}`}.`;
+    };
+    const next = (expr, n = 10) => {
+      const parts = expr.trim().split(/\s+/);
+      const [miS, hrS, domS, moS, dowS] = parts;
+      const mins = parseField(miS, 0, 59), hours = parseField(hrS, 0, 23);
+      const doms = parseField(domS, 1, 31), mons = parseField(moS, 1, 12, months);
+      const dows_ = parseField(dowS, 0, 6, dows);
+      if (dows_.has(7)) { dows_.delete(7); dows_.add(0); }
+      const out = [];
+      const d = new Date(); d.setSeconds(0, 0); d.setMinutes(d.getMinutes() + 1);
+      let guard = 0;
+      while (out.length < n && guard++ < 525600 * 2) {
+        if (mons.has(d.getMonth() + 1) && (domS === '*' || dowS === '*' ? (doms.has(d.getDate()) && dows_.has(d.getDay())) : (doms.has(d.getDate()) || dows_.has(d.getDay()))) && hours.has(d.getHours()) && mins.has(d.getMinutes())) {
+          out.push(new Date(d));
+        }
+        d.setMinutes(d.getMinutes() + 1);
+      }
+      return out;
+    };
+    const run = () => {
+      const expr = $('cron-in').value;
+      const st = $('cron-status');
+      try {
+        $('cron-plain').textContent = describe(expr);
+        const runs = next(expr, 10);
+        $('cron-next').innerHTML = runs.map((d) => `<div><span>${d.toLocaleString('en-GB', { weekday: 'short' })}</span><code>${d.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}</code></div>`).join('') || '<p class="muted">No matching times in the next two years.</p>';
+        st.textContent = 'Valid'; st.className = 'status ok';
+      } catch (err) {
+        $('cron-plain').textContent = ''; $('cron-next').innerHTML = '';
+        st.textContent = err.message; st.className = 'status bad';
+      }
+    };
+    $('cron-in').addEventListener('input', live('cron', run, 120));
+    document.addEventListener('click', (e) => {
+      const c = e.target.closest('[data-cron]');
+      if (c && activeId === 'cron') { $('cron-in').value = c.dataset.cron; run(); }
+    });
+    run();
+  },
+});
+
+/* ---------- Lorem ---------- */
+tool({
+  id: 'lorem', name: 'Lorem', keys: 'lorem ipsum placeholder dummy text filler',
+  lede: 'Generate placeholder text — words, sentences or paragraphs — classic or plain English.',
+  html: () => `
+    <div class="row">
+      <label class="opt">Unit
+        <select id="lor-unit"><option value="p">Paragraphs</option><option value="s">Sentences</option><option value="w">Words</option></select>
+      </label>
+      <label class="opt">Count <input id="lor-n" type="number" min="1" max="50" value="3" /></label>
+      <label class="opt">Flavour
+        <select id="lor-flavour"><option value="latin">Classic Latin</option><option value="en">Plain English</option><option value="hack">Hacker</option></select>
+      </label>
+      <label class="opt"><input type="checkbox" id="lor-start" checked /> Start with "Lorem ipsum…"</label>
+      <button type="button" id="lor-go">Generate</button>
+    </div>
+    ${outBox('lor-out')}`,
+  init() {
+    const banks = {
+      latin: 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure in reprehenderit voluptate velit esse cillum fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim id est laborum'.split(' '),
+      en: 'the quick brown fox jumps over the lazy dog pack my box with five dozen liquor jugs how vexingly daft new frogs quiz pumped pixies waltz badly through the moonlit forest a wise owl watches silent code compiles cleanly ideas travel faster than light small steps lead to great distance curiosity opens quiet doors'.split(' '),
+      hack: 'bypass compile deploy render refactor cache stream endpoint socket packet buffer thread kernel syscall shell daemon container cluster latency throughput entropy checksum hash cipher payload token session beacon shard pipeline migration schema index query mutation observer promise'.split(' '),
+    };
+    const pick = (bank) => bank[randInt(bank.length)];
+    const sentence = (bank) => {
+      const n = 6 + randInt(10);
+      const w = Array.from({ length: n }, () => pick(bank));
+      w[0] = w[0][0].toUpperCase() + w[0].slice(1);
+      // Insert a comma somewhere in the middle sometimes.
+      if (n > 8 && randInt(2) === 0) w[3 + randInt(3)] += ',';
+      return w.join(' ') + '.';
+    };
+    const paragraph = (bank) => Array.from({ length: 3 + randInt(4) }, () => sentence(bank)).join(' ');
+    const go = () => {
+      const unit = $('lor-unit').value, n = Math.min(50, Math.max(1, +$('lor-n').value || 1));
+      const bank = banks[$('lor-flavour').value];
+      let out = '';
+      if (unit === 'w') out = Array.from({ length: n }, () => pick(bank)).join(' ');
+      else if (unit === 's') out = Array.from({ length: n }, () => sentence(bank)).join(' ');
+      else out = Array.from({ length: n }, () => paragraph(bank)).join('\n\n');
+      if ($('lor-start').checked && $('lor-flavour').value === 'latin') {
+        const prefix = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.';
+        out = unit === 'w' ? ['Lorem', 'ipsum', 'dolor', 'sit', 'amet', ...out.split(' ').slice(5)].slice(0, n).join(' ')
+          : prefix + ' ' + out.replace(/^[A-Z][^.!?]*[.!?]\s*/, '');
+      }
+      $('lor-out').textContent = out;
+      setStatus('lor-out', `${encoder.encode(out).length.toLocaleString()} bytes`, 'ok');
+    };
+    ['lor-unit','lor-n','lor-flavour','lor-start'].forEach((id) => $(id).addEventListener('change', go));
+    $('lor-go').onclick = go;
+    go();
   },
 });
 
